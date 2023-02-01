@@ -34,6 +34,7 @@ void testAnd() {
 
 int main() {
     printf("------------------ Logical Operation Tests ----------------------- \n");
+
     testAnd();
 
     return 0;
