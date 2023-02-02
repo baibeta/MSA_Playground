@@ -13,5 +13,8 @@ make
 * GCC MSA Intrinsics with params:
 >https://gcc.gnu.org/onlinedocs/gcc/MIPS-SIMD-Architecture-Built-in-Functions.html
 
+* GCC Add MSA git commit
+>https://github.com/MIPS/gcc/commit/6cf538daaead38a5bc09a79bfb26c34c83fec91e
+
 * A useful documentation website
 >https://docs.rs/core_arch/latest/core_arch/mips64/

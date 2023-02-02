@@ -139,43 +139,125 @@ void testAverage() {
         v8i16 __builtin_msa_ave_s_h (v8i16, v8i16);
         v4i32 __builtin_msa_ave_s_w (v4i32, v4i32);
         v2i64 __builtin_msa_ave_s_d (v2i64, v2i64);
+       Vector Unsigned Average
+        v16u8 __builtin_msa_ave_u_b (v16u8, v16u8);
+        v8u16 __builtin_msa_ave_u_h (v8u16, v8u16);
+        v4u32 __builtin_msa_ave_u_w (v4u32, v4u32);
+        v2u64 __builtin_msa_ave_u_d (v2u64, v2u64);
     */
     v_dst = __builtin_msa_ave_s_w(v_src1, v_src2);
     printf("Vector Signed Average\n");
     // [0 0 0 0]
     dump_i32_vector(v_dst);
 
-    
-    /* Vector Unsigned Average
-        v16u8 __builtin_msa_ave_u_b (v16u8, v16u8);
-        v8u16 __builtin_msa_ave_u_h (v8u16, v8u16);
-        v4u32 __builtin_msa_ave_u_w (v4u32, v4u32);
-        v2u64 __builtin_msa_ave_u_d (v2u64, v2u64);
-    */
-    // TODO
-
     /* Vector Signed Average Rounded
         v16i8 __builtin_msa_aver_s_b (v16i8, v16i8);
         v8i16 __builtin_msa_aver_s_h (v8i16, v8i16);
         v4i32 __builtin_msa_aver_s_w (v4i32, v4i32);
         v2i64 __builtin_msa_aver_s_d (v2i64, v2i64);
+       Vector Unsigned Average Rounded
+        v16u8 __builtin_msa_aver_u_b (v16u8, v16u8);
+        v8u16 __builtin_msa_aver_u_h (v8u16, v8u16);
+        v4u32 __builtin_msa_aver_u_w (v4u32, v4u32);
+        v2u64 __builtin_msa_aver_u_d (v2u64, v2u64);
     */
     // round((a+b)/2)
     v_dst = __builtin_msa_aver_s_w(v_src1, __builtin_msa_fill_w(1));
     printf("Vector Signed Average Rounded\n");
     // [0 0 0 0]
     dump_i32_vector(v_dst);
-
-
-    /* Vector Unsigned  Average Rounded
-        v16u8 __builtin_msa_aver_u_b (v16u8, v16u8);
-        v8u16 __builtin_msa_aver_u_h (v8u16, v8u16);
-        v4u32 __builtin_msa_aver_u_w (v4u32, v4u32);
-        v2u64 __builtin_msa_aver_u_d (v2u64, v2u64);
-    */
-    // TODO 
-
 }
+
+
+void testDivide() {
+    __int8_t a[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+    __int8_t b[16] = {16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1};
+    v16i8 v_a, v_b, v_dst;
+    v_a = __builtin_msa_ld_b((void*)a, 0);
+    v_b = __builtin_msa_ld_b((void*)b, 0);
+
+    /* Vector Signed Divide
+        v16i8 __builtin_msa_div_s_b (v16i8, v16i8);
+        v8i16 __builtin_msa_div_s_h (v8i16, v8i16);
+        v4i32 __builtin_msa_div_s_w (v4i32, v4i32);
+        v2i64 __builtin_msa_div_s_d (v2i64, v2i64);
+      Vector Unsigned Divide
+        v16u8 __builtin_msa_div_u_b (v16u8, v16u8);
+        v8u16 __builtin_msa_div_u_h (v8u16, v8u16);
+        v4u32 __builtin_msa_div_u_w (v4u32, v4u32);
+        v2u64 __builtin_msa_div_u_d (v2u64, v2u64);
+    */
+
+    // The signed integer elements in vector 'a'
+    //  are divided by signed integer elements in vector 'b'
+
+    v_dst = __builtin_msa_div_s_b(v_a, v_b);
+    printf("Vector Signed Divide\n");
+    // [0 0 0 0 0 0 0 0 1 1 1 2 3 4 7 16]
+    dump_u8_vector((v16u8)v_dst);
+}
+
+void testDotProduct() {
+    short a[8] = {1,2,3,4,5,6,7,8};
+    short b[8] = {1,2,3,1,2,3,1,2};
+    v8i16 v_a, v_b;
+    v4i32 v_c, v_dst;
+    v_a = __builtin_msa_ld_h((void*)a, 0);
+    v_b = __builtin_msa_ld_h((void*)b, 0);
+    v_c = __builtin_msa_fill_w(3);
+
+    /* Vector Signed Dot Product
+        v8i16 __builtin_msa_dotp_s_h (v16i8, v16i8);
+        v4i32 __builtin_msa_dotp_s_w (v8i16, v8i16);
+        v2i64 __builtin_msa_dotp_s_d (v4i32, v4i32);
+       Vector Unsigned Dot Product
+        v8u16 __builtin_msa_dotp_u_h (v16u8, v16u8);
+        v4u32 __builtin_msa_dotp_u_w (v8u16, v8u16);
+        v2u64 __builtin_msa_dotp_u_d (v4u32, v4u32);
+    */
+    // a : 1,2,3,4,5,6,7,8,9
+    // b ：9,8,7,6,5,4,3,2,1
+    // dst = [1*1 + 2*2], [3*3 + 4*1], [5*2 + 6*3], [7*1 + 8*2]
+    //     = [5, 13, 28, 23]
+    v_dst = __builtin_msa_dotp_s_w(v_a, v_b);
+    printf("Vector Signed Dot Product\n");
+    dump_i32_vector(v_dst);
+
+    /* Vector Signed Dot Product and Add
+        v8i16 __builtin_msa_dpadd_s_h (v8i16, v16i8, v16i8);
+        v4i32 __builtin_msa_dpadd_s_w (v4i32, v8i16, v8i16);
+        v2i64 __builtin_msa_dpadd_s_d (v2i64, v4i32, v4i32);
+       Vector Unsigned Dot Product and Add
+        v8u16 __builtin_msa_dpadd_u_h (v8u16, v16u8, v16u8);
+        v4u32 __builtin_msa_dpadd_u_w (v4u32, v8u16, v8u16);
+        v2u64 __builtin_msa_dpadd_u_d (v2u64, v4u32, v4u32);
+    */
+    // a : 1,2,3,4,5,6,7,8,9
+    // b ：9,8,7,6,5,4,3,2,1
+    // dst = [1*1 + 2*2]+3, [3*3 + 4*1]+3 , [5*2 + 6*3]+3, [7*1 + 8*2]+3
+    //     = [8 16 31 26]
+    v_dst = __builtin_msa_dpadd_s_w(v_c, v_a, v_b);
+    printf("Vector Signed Dot Product and Add\n");
+    dump_i32_vector(v_dst);
+
+    /* Vector Signed Dot Product and Subtract
+        v8i16 __builtin_msa_dpsub_s_h (v8i16, v16i8, v16i8);
+        v4i32 __builtin_msa_dpsub_s_w (v4i32, v8i16, v8i16);
+        v2i64 __builtin_msa_dpsub_s_d (v2i64, v4i32, v4i32);
+       Vector Unsigned Dot Product and Subtract
+        v8i16 __builtin_msa_dpsub_u_h (v8i16, v16u8, v16u8);
+        v4i32 __builtin_msa_dpsub_u_w (v4i32, v8u16, v8u16);
+        v2i64 __builtin_msa_dpsub_u_d (v2i64, v4u32, v4u32);
+    */
+    // a : 1,2,3,4,5,6,7,8,9
+    // b ：9,8,7,6,5,4,3,2,1
+    // dst = 3-[1*1 + 2*2]， 3-[3*3 + 4*1], 3-[5*2 + 6*3], 3-[7*1 + 8*2]
+    //     = [-2 -10 -25 -20]
+    v_dst = __builtin_msa_dpsub_s_w(v_c, v_a, v_b);
+    printf("Vector Signed Dot Product and Subtract\n");
+    dump_i32_vector(v_dst);
+}
+
 
 int main() {
     printf("------------------ Integer Arithmetic Tests ---------------------- \n");
@@ -183,6 +265,8 @@ int main() {
     testAdd();
     testSubtract();
     testAverage();
+    testDivide();
+    testDotProduct();
 
     return 0;
 }

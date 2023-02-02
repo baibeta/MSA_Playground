@@ -1,4 +1,4 @@
-all: clean msa_int_arith msa_logical msa_bit_op msa_branch msa_compare msa_memory run
+all: count clean msa_int_arith msa_logical msa_bit_op msa_branch msa_compare msa_memory msa_floating_point run
 
 CROSS_COMPILE ?= /data/home/yifan.bai/code/x2000/prebuilts/toolchains/mips-gcc720-glibc229/bin/mips-linux-gnu-
 CC=$(CROSS_COMPILE)gcc
@@ -22,6 +22,9 @@ msa_compare: msa_compare.c
 msa_memory: msa_memory.c
 	${CC} $^ -o $@ ${CXXFLAGS}
 
+msa_floating_point: msa_floating_point.c
+	${CC} $^ -o $@ ${CXXFLAGS}
+
 run:
 	-qemu-mipsel -cpu P5600 msa_int_arith
 	-qemu-mipsel -cpu P5600 msa_logical
@@ -29,6 +32,10 @@ run:
 	-qemu-mipsel -cpu P5600 msa_branch
 	-qemu-mipsel -cpu P5600 msa_compare
 	-qemu-mipsel -cpu P5600 msa_memory
+	-qemu-mipsel -cpu P5600 msa_floating_point
+
+count:
+	-find . -name '*.c' | xargs wc -l
 
 clean:
 	-rm msa_int_arith
@@ -37,3 +44,4 @@ clean:
 	-rm msa_branch
 	-rm msa_compare
 	-rm msa_memory
+	-rm msa_floating_point
