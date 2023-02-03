@@ -259,6 +259,63 @@ void testDotProduct() {
 }
 
 
+void testHorizontal() {
+    short a[8] = {1,2,3,4,5,6,7,8};
+    short b[8] = {1,2,3,1,2,3,1,2};
+    v8i16 v_a = __builtin_msa_ld_h((void*)a, 0);
+    v8i16 v_b = __builtin_msa_ld_h((void*)b, 0);
+
+    /**
+    Vector Signed Horizontal Add
+        v8i16 __builtin_msa_hadd_s_h (v16i8, v16i8);
+        v4i32 __builtin_msa_hadd_s_w (v8i16, v8i16);
+        v2i64 __builtin_msa_hadd_s_d (v4i32, v4i32);
+    Vector Unsigned Horizontal Add
+        v8u16 __builtin_msa_hadd_u_h (v16u8, v16u8);
+        v4u32 __builtin_msa_hadd_u_w (v8u16, v8u16);
+        v2u64 __builtin_msa_hadd_u_d (v4u32, v4u32);
+    Vector Signed Horizontal Subtract
+        v8i16 __builtin_msa_hsub_s_h (v16i8, v16i8);
+        v4i32 __builtin_msa_hsub_s_w (v8i16, v8i16);
+        v2i64 __builtin_msa_hsub_s_d (v4i32, v4i32);
+    Vector Unsigned Horizontal Subtract
+        v8i16 __builtin_msa_hsub_u_h (v16u8, v16u8);
+        v4i32 __builtin_msa_hsub_u_w (v8u16, v8u16);
+        v2i64 __builtin_msa_hsub_u_d (v4u32, v4u32);
+    */
+
+    // The odd elements in vector 'a' are added to the even elements in vector 'b'
+    // producing a result twice the size of the input operands. 
+    printf("Vector Signed Horizontal Add: \n");
+    dump_i16_vector(v_a);
+    dump_i16_vector(v_b);
+    printf("a[1] + b[0], a[3] + b[2], a[5] + b[4], a[7] + b[6] =");
+    printf(" [%hd %hd %hd %hd] \n", v_a[1] + v_b[0], v_a[3] + v_b[2], v_a[5] + v_b[4], v_a[7] + v_b[6]);
+    dump_i32_vector(__builtin_msa_hadd_s_w(v_a, v_b));
+
+    // a[1] - b[0], a[3] - b[2], a[5] - b[4], a[7] - b[6]
+    // [1 1 4 7]
+    printf("Vector Signed Horizontal Subtract: \n");
+    dump_i32_vector(__builtin_msa_hsub_s_w(v_a, v_b));
+
+
+
+    printf("Test SUM(v8i16 a, v8i16 b):\n");
+    // sum (v8i16 a, v8i16 b) = 51
+    // without MSA:
+    //    to sum two v8i16 vectors, you need 15 scaler `ADD` ins
+    // with MSA:
+    //    5 `SIMD` ins + 1 scaler `ADD` ins
+    v4i32 sum_1 = __builtin_msa_hadd_s_w(v_a, v_b);
+    v4i32 sum_2 = __builtin_msa_hadd_s_w(v_b, v_a);
+    v2i64 sum_12 = __builtin_msa_hadd_s_d(sum_1,sum_2);
+    v2i64 sum_21 = __builtin_msa_hadd_s_d(sum_2,sum_1);
+    v2i64 sum_1221 = __builtin_msa_add_a_d(sum_12, sum_21);
+    int64_t sum = sum_1221[0] + sum_1221[1];
+    printf("SUM(v_a, v_b) = %"PRId64"\n", sum);
+}
+
+
 int main() {
     printf("------------------ Integer Arithmetic Tests ---------------------- \n");
 
@@ -267,6 +324,7 @@ int main() {
     testAverage();
     testDivide();
     testDotProduct();
+    testHorizontal();
 
     return 0;
 }
