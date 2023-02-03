@@ -1,4 +1,5 @@
 #include "stdio.h"
+#include <inttypes.h>
 
 void dump_i16_vector(v8i16 vector) {
     printf("v4i32 vector = [%hd %hd %hd %hd %hd %hd %hd %hd]\n",
@@ -8,11 +9,13 @@ void dump_i16_vector(v8i16 vector) {
 
 void dump_i32_vector(v4i32 vector) {
     printf("v4i32 vector = [%d %d %d %d]\n",
-        vector[0], vector[1], vector[2], vector[3]);
+        __msa_copy_s_w(vector, 0), __msa_copy_s_w(vector,1),
+        __msa_copy_s_w(vector, 2), __msa_copy_s_w(vector,3));
 }
 
 void dump_i64_vector(v2i64 vector) {
-    printf("v2i64 vector = [%lld %lld]\n", vector[0], vector[1]);
+    printf("v2i64 vector = [%"PRId64" %"PRId64"]\n",
+    __msa_copy_s_d(vector, 0 ), __msa_copy_s_d(vector,1 ));
 }
 
 

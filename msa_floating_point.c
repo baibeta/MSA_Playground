@@ -479,10 +479,75 @@ void testConversion() {
     printf("Vector Floating-Point Truncate and Convert to Signed Integer: \n");
     dump_i64_vector(__builtin_msa_ftrunc_s_d(v_a));
 
-
-
-
 }
+
+
+void testDotProduct() {
+    // There is no floating-point dot product MSA ins.
+    // Here implement with fixed-point MSA
+
+    float a[4] = {0.1, 0.2, 0.3, 0.4};
+    float b[4] = {0.5, 0.6, 0.7, 0.8};
+
+    float reference_result = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    printf("Test Floating Point Dot Product:\n");
+    printf("Reference result = %f \n", reference_result);
+
+    // Now implement with fixed-point MSA
+    int16_t array_fixed[8] = {0};
+    int32_t array_fixed_a[4] = {0};
+    int32_t array_fixed_b[4] = {0};
+    v4f32 v_f_a = (v4f32)__builtin_msa_ld_w((void*)a, 0);
+    v4f32 v_f_b = (v4f32)__builtin_msa_ld_w((void*)b, 0);
+
+    // v_f_a * 2^15, v_f_b * 2^15, so a*b scale = 2^30
+    v8i16 v_i_ba = __builtin_msa_ftq_h(v_f_a, v_f_b);
+
+    __builtin_msa_st_h(v_i_ba, array_fixed, 0);
+    array_fixed_a[0] = (int32_t)array_fixed[4];
+    array_fixed_a[1] = (int32_t)array_fixed[5];
+    array_fixed_a[2] = (int32_t)array_fixed[6];
+    array_fixed_a[3] = (int32_t)array_fixed[7];
+    array_fixed_b[0] = (int32_t)array_fixed[0];
+    array_fixed_b[1] = (int32_t)array_fixed[1];
+    array_fixed_b[2] = (int32_t)array_fixed[2];
+    array_fixed_b[3] = (int32_t)array_fixed[3];
+
+    v4i32 v_i_a = (v4i32)__builtin_msa_ld_w((void*)array_fixed_a, 0);
+    v4i32 v_i_b = (v4i32)__builtin_msa_ld_w((void*)array_fixed_b, 0);
+
+    v2i64 v_result_fixed = __builtin_msa_dotp_s_d(v_i_a,v_i_b);
+
+    int32_t result_i32[4] = {0};
+    result_i32[0] = (int32_t)__msa_copy_s_d(v_result_fixed,0);
+    result_i32[1] = (int32_t)__msa_copy_s_d(v_result_fixed,1);
+    v4i32 v_result_i32 = (v4i32)__builtin_msa_ld_w((void*)result_i32, 0);
+
+    // v_result_i32 / 2^31 = dequant_result
+    v2f64 dequant_result = __builtin_msa_ffqr_d(v_result_i32);
+
+    // the scale is different to ftq (2^30)
+    // so need to * 2^1
+    float fixed_point_result = ((float)dequant_result[0] + (float)dequant_result[1]) * 2;
+
+    printf("Fixed-point result = [%f], acuracy loss = [%f]\n",
+            fixed_point_result, fabs(fixed_point_result - reference_result));
+
+    /** Scaler implementation takes:
+        - 4 Float MUL
+        - 3 Float ADD
+        MSA implementation takes:
+        - 1 SIMD QUANT
+        - 1 SIMD DOTP
+        - 1 SIMD DEQUANT
+        - 1 Float Add
+        - 1 Float MUL
+          and a lot of memory operation
+    */
+}
+
+
+
 
 int main() {
     printf("------------------ Floating-point Tests -------------------------- \n");
@@ -490,6 +555,8 @@ int main() {
     testArithmetic();
     testCompare();
     testConversion();
+
+    testDotProduct();
 
     return 0;
 }
