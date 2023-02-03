@@ -1,9 +1,20 @@
 #include "stdio.h"
 
+void dump_i16_vector(v8i16 vector) {
+    printf("v4i32 vector = [%hd %hd %hd %hd %hd %hd %hd %hd]\n",
+        vector[0], vector[1], vector[2], vector[3],
+        vector[4], vector[5], vector[6], vector[7]);
+}
+
 void dump_i32_vector(v4i32 vector) {
     printf("v4i32 vector = [%d %d %d %d]\n",
         vector[0], vector[1], vector[2], vector[3]);
 }
+
+void dump_i64_vector(v2i64 vector) {
+    printf("v2i64 vector = [%lld %lld]\n", vector[0], vector[1]);
+}
+
 
 void dump_i32_vector_hex(v4i32 vector) {
     printf("v4i32 vector = [0x%x 0x%x 0x%x 0x%x]\n",
@@ -25,5 +36,5 @@ void dump_f32_vector(v4f32 vector) {
 }
 
 void dump_f64_vector(v2f64 vector) {
-    printf("v4f32 vector = [%f %f]\n",vector[0], vector[1]);
+    printf("v2f64 vector = [%f %f]\n",vector[0], vector[1]);
 }
