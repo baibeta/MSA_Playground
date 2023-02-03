@@ -482,6 +482,23 @@ void testConversion() {
 }
 
 
+/**
+        Scaler implementation takes:
+        - 4 Float MUL
+        - 3 Float ADD
+        FIXED-POINT MSA implementation takes:
+        - 1 SIMD QUANT
+        - 1 SIMD DOTP
+        - 1 SIMD DEQUANT
+        - 1 Float Add
+        - 1 Float MUL
+            and a lot of extra memory operation.
+        FLOATING-POINT MSA takes:
+        - 1 SIMD FMUL
+        - 2 SIMD Up-Convert
+        - 1 SIMD ADD
+        - 1 Float Add
+*/
 void testDotProduct() {
     // There is no floating-point dot product MSA ins.
     // Here implement with fixed-point MSA
@@ -523,27 +540,25 @@ void testDotProduct() {
     result_i32[1] = (int32_t)__msa_copy_s_d(v_result_fixed,1);
     v4i32 v_result_i32 = (v4i32)__builtin_msa_ld_w((void*)result_i32, 0);
 
-    // v_result_i32 / 2^31 = dequant_result
+    // Dequant right half(first 2 elements) of v_result_i32
+    // v_result_i32[0..1] / 2^31 = dequant_result
     v2f64 dequant_result = __builtin_msa_ffqr_d(v_result_i32);
 
     // the scale is different to ftq (2^30)
     // so need to * 2^1
     float fixed_point_result = ((float)dequant_result[0] + (float)dequant_result[1]) * 2;
 
-    printf("Fixed-point result = [%f], acuracy loss = [%f]\n",
+    printf("Fixed-point MSA result = %f, acuracy loss = %f\n",
             fixed_point_result, fabs(fixed_point_result - reference_result));
 
-    /** Scaler implementation takes:
-        - 4 Float MUL
-        - 3 Float ADD
-        MSA implementation takes:
-        - 1 SIMD QUANT
-        - 1 SIMD DOTP
-        - 1 SIMD DEQUANT
-        - 1 Float Add
-        - 1 Float MUL
-          and a lot of memory operation
-    */
+
+    // Now implement with floating-point MSA (MUL and ADD)
+    v4f32 v_mul = __builtin_msa_fmul_w(v_f_a, v_f_b);
+    v2f64 v_mul_l = __builtin_msa_fexupl_d(v_mul);
+    v2f64 v_mul_r = __builtin_msa_fexupr_d(v_mul);
+    v2f64 v_sum = __builtin_msa_fadd_d(v_mul_l, v_mul_r);
+    float floating_point_result = v_sum[0] + v_sum[1];
+    printf("Floating_point MSA result = %f \n", floating_point_result);
 }
 
 
@@ -556,6 +571,7 @@ int main() {
     testCompare();
     testConversion();
 
+    // There is no direct MSA floating-point dotp
     testDotProduct();
 
     return 0;
