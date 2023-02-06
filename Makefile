@@ -1,4 +1,4 @@
-all: count clean msa_int_arith msa_logical msa_bit_op msa_branch msa_compare msa_memory msa_floating_point run
+all: count clean test_bins qemu_tests
 
 CROSS_COMPILE ?= /data/home/yifan.bai/code/x2000/prebuilts/toolchains/mips-gcc720-glibc229/bin/mips-linux-gnu-
 CC=$(CROSS_COMPILE)gcc
@@ -25,23 +25,19 @@ msa_memory: msa_memory.c
 msa_floating_point: msa_floating_point.c
 	${CC} $^ -o $@ ${CXXFLAGS}
 
-run:
-	-qemu-mipsel -cpu P5600 msa_int_arith
-	-qemu-mipsel -cpu P5600 msa_logical
-	-qemu-mipsel -cpu P5600 msa_bit_op
-	-qemu-mipsel -cpu P5600 msa_branch
-	-qemu-mipsel -cpu P5600 msa_compare
-	-qemu-mipsel -cpu P5600 msa_memory
-	-qemu-mipsel -cpu P5600 msa_floating_point
+msa_other: msa_other.c
+	${CC} $^ -o $@ ${CXXFLAGS}
+
+bins = msa_int_arith msa_logical msa_bit_op msa_branch msa_compare msa_memory msa_floating_point
+
+test_bins: ${bins}
+qemu_tests:
+	for x in $(foreach n,$(bins), $(n)); do \
+		qemu-mipsel -cpu P5600 $$x; \
+	done
 
 count:
 	-find . -name '*.c' | xargs wc -l
 
 clean:
-	-rm msa_int_arith
-	-rm msa_logical
-	-rm msa_bit_op
-	-rm msa_branch
-	-rm msa_compare
-	-rm msa_memory
-	-rm msa_floating_point
+	-find . -type f -name 'msa_*' -and -not -name '*.c' -delete
