@@ -31,11 +31,30 @@ void testAnd() {
 }
 
 
+void testOr() {
+    v16u8 v_true, v_false, v_dst;
+    v_true = (v16u8)__builtin_msa_fill_b(1);
+    v_false = (v16u8)__builtin_msa_fill_b(0);
+
+    /* Vector Logical Or
+        v16u8 __builtin_msa_or_v (v16u8, v16u8);
+       Vector Logical Negated Or
+        v16u8 __builtin_msa_nor_v (v16u8, v16u8);
+       Immediate Logical Or
+        v16u8 __builtin_msa_ori_b (v16u8, imm0_255);
+       Immediate Logical Negated Or
+        v16u8 __builtin_msa_nori_b (v16u8, imm0_255);
+    */
+
+}
+
+
 
 int main() {
     printf("------------------ Logical Operation Tests ----------------------- \n");
 
     testAnd();
+    testOr();
 
     return 0;
 }
