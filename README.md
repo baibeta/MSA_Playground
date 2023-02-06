@@ -1,10 +1,20 @@
 # MSA_Playground
 MIPS SIMD Architecture intrinsics
 
+# Prerequisites
+* MIPS GCC Toolchains
+* MIPS QEMU
+
 # Build and Test
+Build and Run on QEMU
 ```
 make
 ```
+Only run on QEMU
+```
+make qemu_tests
+```
+
 
 ## Referece:
 * MIPS64 SIMD Manual:
