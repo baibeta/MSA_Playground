@@ -126,6 +126,65 @@ void testSubtract() {
     // [-2 -4 -6 -8]
     dump_i32_vector(v_dst);
 
+
+    /* Vector Subtract
+        v16i8 __builtin_msa_subv_b (v16i8, v16i8);
+        v8i16 __builtin_msa_subv_h (v8i16, v8i16);
+        v4i32 __builtin_msa_subv_w (v4i32, v4i32);
+        v2i64 __builtin_msa_subv_d (v2i64, v2i64);
+       Immediate Subtract
+        v16i8 __builtin_msa_subvi_b (v16i8, imm0_31);
+        v8i16 __builtin_msa_subvi_h (v8i16, imm0_31);
+        v4i32 __builtin_msa_subvi_w (v4i32, imm0_31);
+        v2i64 __builtin_msa_subvi_d (v2i64, imm0_31);
+    */
+    printf("Vector Subtract\n");
+    // v_dst = v_src1 - v_src2
+    // [2 4 6 8]
+    dump_i32_vector(__builtin_msa_subv_w(v_src1, v_src2));
+
+    printf("Immediate Subtract\n");
+    // v_dst = v_src1 - imm
+    // [-1 0 1 2]
+    dump_i32_vector(__builtin_msa_subvi_w(v_src1, 2));
+
+    // subv is not saturate
+    // 2147483647 - (-1) = sat (2147483647)
+    // not sat = (-2147483648)
+    v4i32 v_max = (v4i32)__builtin_msa_ld_w((void*)src_max_int, 0);
+    dump_i32_vector(__builtin_msa_subv_w(v_max, v_src2));
+
+    /* Vector Signed Saturated Subtract of Signed Values
+        v16i8 __builtin_msa_subs_s_b (v16i8, v16i8);
+        v8i16 __builtin_msa_subs_s_h (v8i16, v8i16);
+        v4i32 __builtin_msa_subs_s_w (v4i32, v4i32);
+        v2i64 __builtin_msa_subs_s_d (v2i64, v2i64);
+       Vector Unsigned Saturated Subtract of Unsigned Values
+        v16u8 __builtin_msa_subs_u_b (v16u8, v16u8);
+        v8u16 __builtin_msa_subs_u_h (v8u16, v8u16);
+        v4u32 __builtin_msa_subs_u_w (v4u32, v4u32);
+        v2u64 __builtin_msa_subs_u_d (v2u64, v2u64);
+    */
+    // subs is saturate
+    // 2147483647 - (-1) = sat (2147483647)
+    printf("Vector Signed Saturated Subtract of Signed Values\n");
+    dump_i32_vector(__builtin_msa_subs_s_w(v_max, v_src2));
+
+
+    /* Vector Unsigned Saturated Subtract of Signed Values
+        v16u8 __builtin_msa_subsus_u_b (v16u8, v16i8);
+        v8u16 __builtin_msa_subsus_u_h (v8u16, v8i16);
+        v4u32 __builtin_msa_subsus_u_w (v4u32, v4i32);
+        v2u64 __builtin_msa_subsus_u_d (v2u64, v2i64);
+       Vector Signed Saturated Subtract of Unsigned Values
+        v16i8 __builtin_msa_subsuu_s_b (v16u8, v16u8);
+        v8i16 __builtin_msa_subsuu_s_h (v8u16, v8u16);
+        v4i32 __builtin_msa_subsuu_s_w (v4u32, v4u32);
+        v2i64 __builtin_msa_subsuu_s_d (v2u64, v2u64);
+    */
+    // unsigned = sat(signed - unsigned)
+    printf("Vector Unsigned Saturated Subtract of Signed Values\n");
+    dump_u32_vector(__builtin_msa_subsus_u_w((v4u32)v_max, v_src2));
 }
 
 
@@ -422,6 +481,7 @@ void testFixedPoint() {
 
     float f_a[4] = {0.001, 0.002, 0.003, 0.004};
     int q_a[4] = {0};
+    // MSA ...
     for (int i = 0; i < 4; i++) {
         q_a[i] = f_a[i] * 2147483647; // 2^31
     }
@@ -496,7 +556,34 @@ void testFixedPoint() {
     dump_f64_vector(__builtin_msa_ffqr_d(q_result));
     dump_f64_vector(__builtin_msa_ffql_d(q_result));
 
+}
 
+
+void testSaturate() {
+    /**
+    Immediate Signed Saturate
+        v16i8 __builtin_msa_sat_s_b (v16i8, imm0_7);
+        v8i16 __builtin_msa_sat_s_h (v8i16, imm0_15);
+        v4i32 __builtin_msa_sat_s_w (v4i32, imm0_31);
+        v2i64 __builtin_msa_sat_s_d (v2i64, imm0_63);
+    Immediate Unsigned Saturate
+        v16u8 __builtin_msa_sat_u_b (v16u8, imm0_7);
+        v8u16 __builtin_msa_sat_u_h (v8u16, imm0_15);
+        v4u32 __builtin_msa_sat_u_w (v4u32, imm0_31);
+        v2u64 __builtin_msa_sat_u_d (v2u64, imm0_63);
+    */
+    v4i32 v_max = __builtin_msa_ld_w((void*)src_max_int, 0);
+    printf("Immediate Signed Saturate: \n");
+    // saturate vector to imm+1 bits
+    // [127 127 127 127]
+    dump_i32_vector(__builtin_msa_sat_s_w(v_max, 7));
+    // [2147483647 2147483647 2147483647 2147483647]
+    dump_i32_vector(__builtin_msa_sat_s_w(v_max, 31));
+
+    printf("Immediate Unsigned Saturate: \n");
+    // saturate unsigned vector to imm+1 bits
+    // [255 255 255 255]
+    dump_u32_vector(__builtin_msa_sat_u_w((v4u32)v_max, 7));
 }
 
 
@@ -514,6 +601,7 @@ int main() {
     testDotProduct();
     testHorizontal();
     testFixedPoint();
+    testSaturate();
 
     return 0;
 }
