@@ -211,6 +211,16 @@ void testPack() {
 
     printf("Vector Pack Odd: \n");
     dump_i32_vector(__builtin_msa_pckod_w(v_a, v_b));
+
+
+    printf("Pack two vectors into one: \n");
+    // Try pack a(v4i32) and b(v4i32) into one vector(v8i16),
+    //  watch out a and b should be less than i16_max.
+    // Firstly convert a(v4i32) to a(v8i16), so the leading zero of a will be treat as odd elements,
+    //  then we can use pack even.
+    v8i16 v_dst = __builtin_msa_pckev_h((v8i16)v_b, (v8i16)v_a);
+    // [1 2 3 4 5 6 7 8]
+    dump_i16_vector(v_dst);
 }
 
 
@@ -284,6 +294,7 @@ void testElement() {
     */
     printf("GPR Columns Slide: \n");
     // TODO -- It's too hard to understand.
+    //
     // Vector registers 'a' and 'b' contain 2-dimensional byte arrays stored row-wise.
     // The two source rectangles 'b' and 'a' are concatenated horizontally in the order
     //  they appear in the syntax, i.e. first 'a' and then 'b'.
@@ -292,17 +303,179 @@ void testElement() {
     // The result is written to vector.
     // GPR 'c' value is interpreted modulo the number of columns in destination rectangle,
     // or equivalently, the number of data format df elements in the destination vector.
-    dump_i32_vector(__builtin_msa_sld_w(v_1, v_2, 1));
-    // a = [1,2,3,4]
-    // b = [5,6,7,8]
-    // i32 = 1
-    // sld:
-    // [16777216 33554432 50331648 67108864]
+
+    // a = [[1],[2],[3],[4]]
+    // b = [[5],[6],[7],[8]]
+    // c = c % [number of elements]
+    // if colums slide = 0, the result is b
+
+    // [0x00000005 0x00000006 0x00000007 0x00000008]
+    dump_i32_vector_hex(__builtin_msa_sld_w(v_1, v_2, 0));
+    // [0x01000000 0x02000000 0x03000000 0x04000000]
+    dump_i32_vector_hex(__builtin_msa_sld_w(v_1, v_2, 1));
+    // [0x00010000 0x00020000 0x00030000 0x00040000]
+    dump_i32_vector_hex(__builtin_msa_sld_w(v_1, v_2, 2));
+    // [0x00000100 0x00000200 0x00000300 0x00000400]
+    dump_i32_vector_hex(__builtin_msa_sld_w(v_1, v_2, 3));
 
 
-    // TODO
-    // Vector Floating-Point Class Mask
-    // Vector Data Preserving Shuffle
+    int aa[4] = {0x1f1f1f1f,0x2f2f2f2f,0x3f3f3f3f,0x4f4f4f4f};
+    int bb[4] = {0x1aaaaaaa,0x1bbbbbbb,0x1ccccccc,0x1ddddddd};
+    v4i32 v_11 = __builtin_msa_ld_w((void*)aa, 0);
+    v4i32 v_22 = __builtin_msa_ld_w((void*)bb, 0);
+    // [0x1aaaaaaa 0x1bbbbbbb 0x1ccccccc 0x1ddddddd]
+    dump_i32_vector_hex(__builtin_msa_sld_w(v_11, v_22, 0));
+    // [0x1f1aaaaa 0x2f1bbbbb 0x3f1ccccc 0x4f1ddddd]
+    dump_i32_vector_hex(__builtin_msa_sld_w(v_11, v_22, 1));
+    // [0x1f1f1aaa 0x2f2f1bbb 0x3f3f1ccc 0x4f4f1ddd]
+    dump_i32_vector_hex(__builtin_msa_sld_w(v_11, v_22, 2));
+    // [0x1f1f1f1a 0x2f2f2f1b 0x3f3f3f1c 0x4f4f4f1d]
+    dump_i32_vector_hex(__builtin_msa_sld_w(v_11, v_22, 3));
+    // so it looks like:
+    // first concatenate a and b:
+    // then if no slide, return right half
+    // if slide then shift left.
+    // ------------------------------------
+    // cat(a,b) [1f 1f 1f 1f 1a aa aa aa]
+    // slide=3     [1f 1f 1f 1a]
+    // slide=2        [1f 1f 1a aa]
+    // slide=1           [1f 1a aa aa]
+    // slide=0              [1a aa aa aa]
+
+
+
+
+    __int16_t aa16[8] = {0x1f1f,0x2f2f,0x3f3f,0x4f4f,0x5f5f,0x6f6f,0x7f7f,0x8f8f};
+    __int16_t bb16[8] = {0x1aaa,0x1bbb,0x1ccc,0x1ddd,0x1eee,0x1fff,0x2aaa,0x2bbb};
+    v8i16 v_aa16 = __builtin_msa_ld_h((void*)aa16, 0);
+    v8i16 v_bb16 = __builtin_msa_ld_h((void*)bb16, 0);
+    /**
+    concatanate a(64bit) and b(64bit)
+       a[3] a[2] a[1] a[0] b[3] b[2] b[1] b[0]
+       4f4f 3f3f 2f2f 1f1f 1ddd 1ccc 1bbb 1aaa
+    0                                     1aaa
+    1                                  bb 1a
+    2                                1bbb
+    3                             cc 1b
+    4                           1ccc
+    5                        dd 1c
+    6                      1ddd
+    7                    1f1d
+    */
+    /**
+        v8i16 vector = [0x1aaa 0x1bbb 0x1ccc 0x1ddd 0x1eee 0x1fff 0x2aaa 0x2bbb]
+        v8i16 vector = [0xbb1a 0xcc1b 0xdd1c 0x1f1d 0xff1e 0xaa1f 0xbb2a 0x5f2b]
+        v8i16 vector = [0x1bbb 0x1ccc 0x1ddd 0x1f1f 0x1fff 0x2aaa 0x2bbb 0x5f5f]
+        v8i16 vector = [0xcc1b 0xdd1c 0x1f1d 0x2f1f 0xaa1f 0xbb2a 0x5f2b 0x6f5f]
+        v8i16 vector = [0x1ccc 0x1ddd 0x1f1f 0x2f2f 0x2aaa 0x2bbb 0x5f5f 0x6f6f]
+        v8i16 vector = [0xdd1c 0x1f1d 0x2f1f 0x3f2f 0xbb2a 0x5f2b 0x6f5f 0x7f6f]
+        v8i16 vector = [0x1ddd 0x1f1f 0x2f2f 0x3f3f 0x2bbb 0x5f5f 0x6f6f 0x7f7f]
+        v8i16 vector = [0x1f1d 0x2f1f 0x3f2f 0x4f3f 0x5f2b 0x6f5f 0x7f6f 0x8f7f] 
+    */
+    dump_i16_vector_hex(__builtin_msa_sld_h(v_aa16, v_bb16, 0));
+    dump_i16_vector_hex(__builtin_msa_sld_h(v_aa16, v_bb16, 1));
+    dump_i16_vector_hex(__builtin_msa_sld_h(v_aa16, v_bb16, 2));
+    dump_i16_vector_hex(__builtin_msa_sld_h(v_aa16, v_bb16, 3));
+    dump_i16_vector_hex(__builtin_msa_sld_h(v_aa16, v_bb16, 4));
+    dump_i16_vector_hex(__builtin_msa_sld_h(v_aa16, v_bb16, 5));
+    dump_i16_vector_hex(__builtin_msa_sld_h(v_aa16, v_bb16, 6));
+    dump_i16_vector_hex(__builtin_msa_sld_h(v_aa16, v_bb16, 7));
+
+
+
+
+    __int8_t a8[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+    __int8_t b8[16] = {16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1};
+    v16i8 v_a8 = __builtin_msa_ld_b((void*)a8, 0);
+    v16i8 v_b8 = __builtin_msa_ld_b((void*)b8, 0);
+    /**
+        v16i8 vector = [16 15 14 13 12 11 10  9  8  7  6  5  4  3  2  1]
+        v16i8 vector = [15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  1]
+        v16i8 vector = [14 13 12 11 10  9  8  7  6  5  4  3  2  1  1  2]
+        v16i8 vector = [13 12 11 10  9  8  7  6  5  4  3  2  1  1  2  3]
+        v16i8 vector = [12 11 10  9  8  7  6  5  4  3  2  1  1  2  3  4]
+        v16i8 vector = [11 10  9  8  7  6  5  4  3  2  1  1  2  3  4  5]
+        v16i8 vector = [10  9  8  7  6  5  4  3  2  1  1  2  3  4  5  6]
+        v16i8 vector = [ 9  8  7  6  5  4  3  2  1  1  2  3  4  5  6  7]
+        v16i8 vector = [ 8  7  6  5  4  3  2  1  1  2  3  4  5  6  7  8]
+        v16i8 vector = [ 7  6  5  4  3  2  1  1  2  3  4  5  6  7  8  9]
+        v16i8 vector = [ 6  5  4  3  2  1  1  2  3  4  5  6  7  8  9 10]
+        v16i8 vector = [ 5  4  3  2  1  1  2  3  4  5  6  7  8  9 10 11]
+        v16i8 vector = [ 4  3  2  1  1  2  3  4  5  6  7  8  9 10 11 12]
+        v16i8 vector = [ 3  2  1  1  2  3  4  5  6  7  8  9 10 11 12 13]
+        v16i8 vector = [ 2  1  1  2  3  4  5  6  7  8  9 10 11 12 13 14]
+        v16i8 vector = [ 1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15]
+    */
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 0));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 1));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 2));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 3));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 4));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 5));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 6));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 7));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 8));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 9));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 10));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 11));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 12));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 13));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 14));
+    dump_i8_vector(__builtin_msa_sld_b(v_a8, v_b8, 15));
+
+
+
+    /**
+     Vector Floating-Point Class Mask
+        v4i32 __builtin_msa_fclass_w (v4f32);
+        v2i64 __builtin_msa_fclass_d (v2f64);
+    */
+    // result has 10 bit
+    // bit 0 -- signaling NaN
+    // bit 1 -- quiet NaN
+    //
+    // bit 2,3,4,5 classify negative values:
+    // bit 2 -- infinity
+    // bit 3 -- normal
+    // bit 4 -- subnormal
+    // bit 5 -- zero
+    //
+    // bit 6,7,8,9 classify positive values
+    // bit 6 -- infinity
+    // bit 7 -- normal
+    // bit 8 -- subnormal
+    // bit 9 -- zero
+    float f[4] = {0.001, 0.002, 0.003, 0.004};
+    v4f32 v_f = (v4f32)__builtin_msa_ld_w((void*)f, 0);
+    printf("Vector Floating-Point Class Mask: \n");
+    dump_i32_vector(__builtin_msa_fclass_w(v_f));
+    // [128 128 128 128]
+    // 128 = 00 10 00 00 00  -- bit 7 -- normal
+
+    float z[4] = {0.0, 0.0, 0.0, 0.0};
+    v4f32 v_z = (v4f32)__builtin_msa_ld_w((void*)z, 0);
+    printf("Vector Floating-Point Class Mask: \n");
+    dump_i32_vector(__builtin_msa_fclass_w(v_z));
+    // [512 512 512 512]
+    // 512 = 10 00 00 00 00 -- bit 9 -- zero
+
+
+    /**
+     Vector Data Preserving Shuffle
+        v16i8 __builtin_msa_vshf_b (v16i8, v16i8, v16i8);
+        v8i16 __builtin_msa_vshf_h (v8i16, v8i16, v8i16);
+        v4i32 __builtin_msa_vshf_w (v4i32, v4i32, v4i32);
+        v2i64 __builtin_msa_vshf_d (v2i64, v2i64, v2i64);
+    */
+    printf("Vector Data Preserving Shuffle: \n");
+
+    // v_1 = 1234
+    // v_2 = 5678
+    // concatanate (a,b)
+    // c's lsb 000001 % 8 = 1 specify the index of source element to copy
+    // if c's bit 6 and 7 are 0, then do copy, if 1 no copy and set dst to 0
+    // [2 3 4 5]
+    dump_i32_vector( __builtin_msa_vshf_w(v_1, v_2, v_1));
 }
 
 

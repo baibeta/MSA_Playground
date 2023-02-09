@@ -185,6 +185,14 @@ void testSubtract() {
     // unsigned = sat(signed - unsigned)
     printf("Vector Unsigned Saturated Subtract of Signed Values\n");
     dump_u32_vector(__builtin_msa_subsus_u_w((v4u32)v_max, v_src2));
+
+    // compiler also support operations(+,-,*)
+    // let's check is it saturated or not
+    printf("Test vector '+ - *' \n");
+    dump_i32_vector(v_max + v_src1);
+    dump_i32_vector(v_max - v_src2);
+    dump_i32_vector(v_max * v_src1);
+
 }
 
 
@@ -481,7 +489,7 @@ void testFixedPoint() {
 
     float f_a[4] = {0.001, 0.002, 0.003, 0.004};
     int q_a[4] = {0};
-    // MSA ...
+    // or use __builtin_msa_ftq_w
     for (int i = 0; i < 4; i++) {
         q_a[i] = f_a[i] * 2147483647; // 2^31
     }

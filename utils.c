@@ -2,7 +2,13 @@
 #include <inttypes.h>
 
 void dump_i16_vector(v8i16 vector) {
-    printf("v4i32 vector = [%hd %hd %hd %hd %hd %hd %hd %hd]\n",
+    printf("v8i16 vector = [%hd %hd %hd %hd %hd %hd %hd %hd]\n",
+        vector[0], vector[1], vector[2], vector[3],
+        vector[4], vector[5], vector[6], vector[7]);
+}
+
+void dump_i16_vector_hex(v8i16 vector) {
+    printf("v8i16 vector = [0x%04hx 0x%04hx 0x%04hx 0x%04hx 0x%04hx 0x%04hx 0x%04hx 0x%04hx]\n",
         vector[0], vector[1], vector[2], vector[3],
         vector[4], vector[5], vector[6], vector[7]);
 }
@@ -13,6 +19,11 @@ void dump_i32_vector(v4i32 vector) {
         __msa_copy_s_w(vector, 2), __msa_copy_s_w(vector,3));
 }
 
+void dump_i32_vector_hex(v4i32 vector) {
+    printf("v4i32 vector = [0x%08x 0x%08x 0x%08x 0x%08x]\n",
+        vector[0], vector[1], vector[2], vector[3]);
+}
+
 void dump_u32_vector(v4u32 vector) {
     printf("v4u32 vector = [%u %u %u %u]\n",
         vector[0], vector[1], vector[2], vector[3]);
@@ -21,12 +32,6 @@ void dump_u32_vector(v4u32 vector) {
 void dump_i64_vector(v2i64 vector) {
     printf("v2i64 vector = [%"PRId64" %"PRId64"]\n",
     __msa_copy_s_d(vector, 0 ), __msa_copy_s_d(vector,1 ));
-}
-
-
-void dump_i32_vector_hex(v4i32 vector) {
-    printf("v4i32 vector = [0x%x 0x%x 0x%x 0x%x]\n",
-        vector[0], vector[1], vector[2], vector[3]);
 }
 
 void dump_i8_vector(v16i8 vector) {
