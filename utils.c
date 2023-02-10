@@ -58,3 +58,9 @@ void dump_f32_vector(v4f32 vector) {
 void dump_f64_vector(v2f64 vector) {
     printf("v2f64 vector = [%.10f %.10f]\n",vector[0], vector[1]);
 }
+
+void dump_f32_array(int len, float *array) {
+    printf("[");
+    for (int i = 0; i < len; i++) printf("%f ", array[i]);
+    printf("]\n");
+}
