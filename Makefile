@@ -40,7 +40,7 @@ qemu_tests:
 	done
 
 count:
-	-find . -name '*.c' | xargs wc -l
+	-python countSourceCode.py
 
 clean:
 	-find . -type f -name 'msa_*' -and -not -name '*.c' -delete
