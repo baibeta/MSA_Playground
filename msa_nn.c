@@ -67,8 +67,10 @@ void sgemm_msa_K4(int M, int N, float *A, float *B, float *C)
             v4f32 sum = {0, 0, 0, 0};
             v4f32 a = {A[i*4+0], A[i*4+1], A[i*4+2], A[i*4+3]};
             v4f32 b = {B[0*N+j], B[1*N+j], B[2*N+j], B[3*N+j]};
-            sum = __msa_fmul_w(a,b);
-            C[i*N+j] = sum[0] + sum[1] + sum[2] + sum[3];
+            
+            // sum = __msa_fmul_w(a,b);
+            // C[i*N+j] = sum[0] + sum[1] + sum[2] + sum[3];
+            sum = __builtin_msa_fmadd_w(a, b, sum);
         }
     }
 }
@@ -91,13 +93,13 @@ void sgemm(int M, int N, int K, float *A, float *B, float *C)
 }
 
 void testSgemm() {
+    // Matrix A = MxK
+    // Matrix B = KxN
+
     int M = 4, N = 4, K = 4;
     float A[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     float B[16] = {16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
     float C[16];
-
-    // Matrix A = MxK
-    // Matrix B = KxN
 
     sgemm(M, N, K, A, B, C);
     printf("SGEMM result:\n");
