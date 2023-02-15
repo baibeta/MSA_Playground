@@ -26,5 +26,5 @@ make qemu_tests
 * GCC Add MSA git commit
 >https://github.com/MIPS/gcc/commit/6cf538daaead38a5bc09a79bfb26c34c83fec91e
 
-* A useful documentation website
+* Rust documentation website
 >https://docs.rs/core_arch/latest/core_arch/mips64/
